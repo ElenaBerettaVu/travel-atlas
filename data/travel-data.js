@@ -1,62 +1,95 @@
 /**
  * ELENA'S ATLAS — TRAVEL DATA
  *
- * Gerarchia:
+ * Structure:
  * Country → Region → City
  *
- * I dati narrativi (feeling, essence, journeys, photos)
- * verranno aggiunti successivamente.
+ * `visits` is the numeric value used internally for charts,
+ * rankings and calculations.
+ *
+ * `visitsDisplay` is the label shown to the user when the
+ * exact number is not known.
  */
 
 window.TRAVEL_ATLAS_DATA = {
 
+  // ============================================================
+  // PROFILE
+  // ============================================================
+
   profile: {
     name: "Elena",
     siteTitle: "Elena's Atlas",
+
     eyebrow: "PERSONAL GEOGRAPHY / 2026",
+
     headline: "Places become part of us.",
-    intro: "Una geografia personale fatta di paesi, regioni, città, ritorni e cose che restano.",
+
+    intro:
+      "Una geografia personale fatta di paesi, regioni, città, ritorni e cose che restano.",
+
     closing: "A map is never only a map.",
+
     base: "Amsterdam, NL",
+
     worldCountryCount: 195,
+
+    // Used later for the dedicated Italy/origin-country visualisation.
+    originCountryIso: "ITA",
+
     demo: false,
+
     updated: "Updated August 2026"
   },
 
+
+  // ============================================================
+  // COUNTRIES
+  // ============================================================
+
   countries: [
 
-    // ============================================================
-    // ITALIA
-    // ============================================================
+    // ==========================================================
+    // ITALIA — ORIGIN COUNTRY
+    // ==========================================================
 
     {
       iso3: "ITA",
       iso2: "IT",
+
       name: "Italia",
       continent: "Europe",
 
-      // 26 = minimo noto, dato che Torino è stata visitata più di 25 volte.
-      // Non sommo le città per evitare di contare due volte lo stesso viaggio.
-      visits: 26,
+      // Lower bound used internally.
+      visits: 25,
+
+      // What the visitor sees.
+      visitsDisplay: "25+",
 
       status: "visited",
+
+      originCountry: true,
+      originSince: 2007,
 
       coordinates: {
         lat: 42.8333,
         lon: 12.8333
       },
 
-      essence: "Ricordi e impressioni da aggiungere.",
+      essence:
+        "Paese di origine: non soltanto una destinazione, ma il punto di partenza della mappa.",
 
       regions: [
 
-        // --------------------------------------------------------
+        // ------------------------------------------------------
         // PIEMONTE
-        // --------------------------------------------------------
+        // ------------------------------------------------------
 
         {
           name: "Piemonte",
-          visits: 26,
+
+          visits: 25,
+          visitsDisplay: "25+",
 
           coordinates: {
             lat: 45.0522,
@@ -73,8 +106,13 @@ window.TRAVEL_ATLAS_DATA = {
                 lon: 7.6869
               },
 
-              visits: 26,
-              visitsDisplay: "25+"
+              visits: 25,
+              visitsDisplay: "25+",
+
+              originCity: true,
+
+              firstRecordedYear: 2007,
+              lastRecordedYear: 2026,
 
               feeling: ""
             },
@@ -89,18 +127,21 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2014,
+
               feeling: ""
             }
-
           ]
         },
 
-        // --------------------------------------------------------
+
+        // ------------------------------------------------------
         // LIGURIA
-        // --------------------------------------------------------
+        // ------------------------------------------------------
 
         {
           name: "Liguria",
+
           visits: 1,
 
           coordinates: {
@@ -120,6 +161,8 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2012,
+
               feeling: ""
             },
 
@@ -133,18 +176,21 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2024,
+
               feeling: ""
             }
-
           ]
         },
 
-        // --------------------------------------------------------
+
+        // ------------------------------------------------------
         // LAZIO
-        // --------------------------------------------------------
+        // ------------------------------------------------------
 
         {
           name: "Lazio",
+
           visits: 1,
 
           coordinates: {
@@ -164,18 +210,21 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2021,
+
               feeling: ""
             }
-
           ]
         },
 
-        // --------------------------------------------------------
+
+        // ------------------------------------------------------
         // VENETO
-        // --------------------------------------------------------
+        // ------------------------------------------------------
 
         {
           name: "Veneto",
+
           visits: 1,
 
           coordinates: {
@@ -195,18 +244,21 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2017,
+
               feeling: ""
             }
-
           ]
         },
 
-        // --------------------------------------------------------
+
+        // ------------------------------------------------------
         // LOMBARDIA
-        // --------------------------------------------------------
+        // ------------------------------------------------------
 
         {
           name: "Lombardia",
+
           visits: 1,
 
           coordinates: {
@@ -226,110 +278,232 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2018,
+
               feeling: ""
             }
-
           ]
         },
 
-        // --------------------------------------------------------
+
+        // ------------------------------------------------------
         // UMBRIA
-        // Regione visitata, città non ancora specificate.
-        // --------------------------------------------------------
+        // City inferred using regional capital.
+        // ------------------------------------------------------
 
         {
           name: "Umbria",
+
           visits: 1,
-          visited: true,
 
           coordinates: {
             lat: 42.9833,
             lon: 12.5667
           },
 
-          cities: []
+          cities: [
+
+            {
+              name: "Perugia",
+
+              coordinates: {
+                lat: 43.1107,
+                lon: 12.3908
+              },
+
+              visits: 1,
+
+              firstVisitYear: 2026,
+
+              inferredCapital: true,
+
+              feeling: ""
+            }
+          ]
         },
 
-        // --------------------------------------------------------
+
+        // ------------------------------------------------------
         // TOSCANA
-        // Regione visitata, città non ancora specificate.
-        // --------------------------------------------------------
+        // City inferred using regional capital.
+        // ------------------------------------------------------
 
         {
           name: "Toscana",
+
           visits: 1,
-          visited: true,
 
           coordinates: {
             lat: 43.4167,
             lon: 11.0
           },
 
-          cities: []
-        }
+          cities: [
 
-      ]
-    },
-    
-    // ============================================================
-    // UK
-    // ============================================================
-    {
-  iso3: "GBR",
-  iso2: "GB",
-  name: "Regno Unito",
-  continent: "Europe",
+            {
+              name: "Firenze",
 
-  visits: 1,
+              coordinates: {
+                lat: 43.7696,
+                lon: 11.2558
+              },
 
-  status: "visited",
+              visits: 1,
 
-  coordinates: {
-    lat: 55.3781,
-    lon: -3.4360
-  },
+              firstVisitYear: 2026,
 
-  essence: "Ricordi e impressioni da aggiungere.",
+              inferredCapital: true,
 
-  regions: [
-    {
-      name: "England",
-      visits: 1,
+              feeling: ""
+            }
+          ]
+        },
 
-      coordinates: {
-        lat: 52.3555,
-        lon: -1.1743
-      },
 
-      cities: [
+        // ------------------------------------------------------
+        // PUGLIA
+        // City inferred using regional capital.
+        // ------------------------------------------------------
+
         {
-          name: "Londra",
-
-          coordinates: {
-            lat: 51.5074,
-            lon: -0.1278
-          },
+          name: "Puglia",
 
           visits: 1,
 
-          feeling: ""
+          coordinates: {
+            lat: 41.1256,
+            lon: 16.8667
+          },
+
+          cities: [
+
+            {
+              name: "Bari",
+
+              coordinates: {
+                lat: 41.1171,
+                lon: 16.8719
+              },
+
+              visits: 1,
+
+              firstVisitYear: 2014,
+
+              inferredCapital: true,
+
+              feeling: ""
+            }
+          ]
+        },
+
+
+        // ------------------------------------------------------
+        // ABRUZZO
+        // City inferred using regional capital.
+        // ------------------------------------------------------
+
+        {
+          name: "Abruzzo",
+
+          visits: 1,
+
+          coordinates: {
+            lat: 42.3512,
+            lon: 13.3984
+          },
+
+          cities: [
+
+            {
+              name: "L'Aquila",
+
+              coordinates: {
+                lat: 42.3498,
+                lon: 13.3995
+              },
+
+              visits: 1,
+
+              firstVisitYear: 2019,
+
+              inferredCapital: true,
+
+              feeling: ""
+            }
+          ]
         }
       ]
-    }
-  ]
-},
+    },
 
-    // ============================================================
+
+    // ==========================================================
+    // REGNO UNITO
+    // ==========================================================
+
+    {
+      iso3: "GBR",
+      iso2: "GB",
+
+      name: "Regno Unito",
+      continent: "Europe",
+
+      visits: 1,
+
+      status: "visited",
+
+      coordinates: {
+        lat: 55.3781,
+        lon: -3.436
+      },
+
+      essence:
+        "Ricordi e impressioni da aggiungere.",
+
+      regions: [
+
+        {
+          name: "England",
+
+          visits: 1,
+
+          coordinates: {
+            lat: 52.3555,
+            lon: -1.1743
+          },
+
+          cities: [
+
+            {
+              name: "Londra",
+
+              coordinates: {
+                lat: 51.5074,
+                lon: -0.1278
+              },
+
+              visits: 1,
+
+              firstVisitYear: 2026,
+
+              feeling: ""
+            }
+          ]
+        }
+      ]
+    },
+
+
+    // ==========================================================
     // FRANCIA
-    // ============================================================
+    // ==========================================================
 
     {
       iso3: "FRA",
       iso2: "FR",
+
       name: "Francia",
       continent: "Europe",
 
-      // Numero minimo certo di visite.
       visits: 1,
 
       status: "visited",
@@ -339,12 +513,14 @@ window.TRAVEL_ATLAS_DATA = {
         lon: 2.2137
       },
 
-      essence: "Ricordi e impressioni da aggiungere.",
+      essence:
+        "Ricordi e impressioni da aggiungere.",
 
       regions: [
 
         {
           name: "Provence-Alpes-Côte d’Azur",
+
           visits: 1,
 
           coordinates: {
@@ -364,14 +540,16 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2026,
+
               feeling: ""
             }
-
           ]
         },
 
         {
           name: "Auvergne-Rhône-Alpes",
+
           visits: 1,
 
           coordinates: {
@@ -391,26 +569,27 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2026,
+
               feeling: ""
             }
-
           ]
         }
-
       ]
     },
 
-    // ============================================================
+
+    // ==========================================================
     // PAESI BASSI
-    // ============================================================
+    // ==========================================================
 
     {
       iso3: "NLD",
       iso2: "NL",
+
       name: "Paesi Bassi",
       continent: "Europe",
 
-      // Utrecht è stata visitata almeno due volte.
       visits: 2,
 
       status: "visited",
@@ -420,12 +599,14 @@ window.TRAVEL_ATLAS_DATA = {
         lon: 5.2913
       },
 
-      essence: "Ricordi e impressioni da aggiungere.",
+      essence:
+        "Ricordi e impressioni da aggiungere.",
 
       regions: [
 
         {
           name: "Noord-Holland",
+
           visits: 1,
 
           coordinates: {
@@ -445,14 +626,16 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2021,
+
               feeling: ""
             }
-
           ]
         },
 
         {
           name: "Utrecht",
+
           visits: 2,
 
           coordinates: {
@@ -472,22 +655,24 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 2,
 
+              firstVisitYear: 2021,
+
               feeling: ""
             }
-
           ]
         }
-
       ]
     },
 
-    // ============================================================
+
+    // ==========================================================
     // GERMANIA
-    // ============================================================
+    // ==========================================================
 
     {
       iso3: "DEU",
       iso2: "DE",
+
       name: "Germania",
       continent: "Europe",
 
@@ -500,12 +685,14 @@ window.TRAVEL_ATLAS_DATA = {
         lon: 10.4515
       },
 
-      essence: "Ricordi e impressioni da aggiungere.",
+      essence:
+        "Ricordi e impressioni da aggiungere.",
 
       regions: [
 
         {
           name: "Nordrhein-Westfalen",
+
           visits: 1,
 
           coordinates: {
@@ -525,22 +712,24 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2025,
+
               feeling: ""
             }
-
           ]
         }
-
       ]
     },
 
-    // ============================================================
+
+    // ==========================================================
     // ARGENTINA
-    // ============================================================
+    // ==========================================================
 
     {
       iso3: "ARG",
       iso2: "AR",
+
       name: "Argentina",
       continent: "South America",
 
@@ -553,12 +742,14 @@ window.TRAVEL_ATLAS_DATA = {
         lon: -63.6167
       },
 
-      essence: "Ricordi e impressioni da aggiungere.",
+      essence:
+        "Ricordi e impressioni da aggiungere.",
 
       regions: [
 
         {
           name: "Ciudad Autónoma de Buenos Aires",
+
           visits: 1,
 
           coordinates: {
@@ -578,245 +769,506 @@ window.TRAVEL_ATLAS_DATA = {
 
               visits: 1,
 
+              firstVisitYear: 2017,
+
               feeling: ""
             }
-
           ]
         }
-
       ]
     }
-
   ],
 
+
   // ============================================================
-  // JOURNEYS
-  // ============================================================
+  // JOURNEYS / TRAVEL RHYTHM
   //
-  // Per ora rimane vuoto.
+  // These entries provide the temporal information used by
+  // Travel Rhythm.
   //
-  // Più avanti potremo aggiungere per ciascun viaggio:
-  // - data
-  // - luogo
-  // - fotografie
-  // - cosa mi è rimasto
-  // - cosa mi ha lasciato
-  // - ricordi
-  // - persone
-  // - impressioni
-  //
+  // `country` uses ISO3 because app.js matches journey.country
+  // with country.iso3.
   // ============================================================
 
   journeys: [
-  {
-    id: "torino-2007",
-    title: "Torino",
-    date: "2007",
-    country: "Italia",
-    region: "Piemonte",
-    city: "Torino",
-    excerpt: "Città di origine, presenza continua dal 2007 al 2026.",
-    left: "Origine, ritorno, continuità.",
-    learned: "",
-    details: ["origin", "returns through 2026"],
-    photos: []
-  },
 
-  {
-    id: "cairo-montenotte-2012",
-    title: "Cairo Montenotte",
-    date: "2012",
-    country: "Italia",
-    region: "Liguria",
-    city: "Cairo Montenotte",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+    // ----------------------------------------------------------
+    // 2007
+    // ----------------------------------------------------------
 
-  {
-    id: "bari-2014",
-    title: "Bari",
-    date: "2014",
-    country: "Italia",
-    region: "Puglia",
-    city: "Bari",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+    {
+      id: "torino-2007-2026",
 
-  {
-    id: "buenos-aires-2017",
-    title: "Buenos Aires",
-    date: "2017",
-    country: "Argentina",
-    region: "Ciudad Autónoma de Buenos Aires",
-    city: "Buenos Aires",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      title: "Torino",
 
-  {
-    id: "milano-2018",
-    title: "Milano",
-    date: "2018",
-    country: "Italia",
-    region: "Lombardia",
-    city: "Milano",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      date: "2007",
+      dateEnd: "2026",
 
-  {
-    id: "laquila-2019",
-    title: "L'Aquila",
-    date: "2019",
-    country: "Italia",
-    region: "Abruzzo",
-    city: "L'Aquila",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      country: "ITA",
+      region: "Piemonte",
+      city: "Torino",
 
-  {
-    id: "amsterdam-2021",
-    title: "Amsterdam",
-    date: "2021",
-    country: "Paesi Bassi",
-    region: "Noord-Holland",
-    city: "Amsterdam",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      kicker: "2007–2026 · ORIGIN",
 
-  {
-    id: "utrecht-2021",
-    title: "Utrecht",
-    date: "2021",
-    country: "Paesi Bassi",
-    region: "Utrecht",
-    city: "Utrecht",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      excerpt:
+        "Città di origine, con una presenza e ritorni continui dal 2007 al 2026.",
 
-  {
-    id: "genova-2024",
-    title: "Genova",
-    date: "2024",
-    country: "Italia",
-    region: "Liguria",
-    city: "Genova",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      left: "",
+      learned: "",
 
-  {
-    id: "colonia-2025",
-    title: "Colonia",
-    date: "2025",
-    country: "Germania",
-    region: "Nordrhein-Westfalen",
-    city: "Colonia",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      details: [
+        "origin",
+        "25+ visits",
+        "2007–2026"
+      ],
 
-  {
-    id: "aix-2026",
-    title: "Aix-en-Provence",
-    date: "2026",
-    country: "Francia",
-    region: "Provence-Alpes-Côte d'Azur",
-    city: "Aix-en-Provence",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+      photos: []
+    },
 
-  {
-    id: "lyon-2026",
-    title: "Lione",
-    date: "2026",
-    country: "Francia",
-    region: "Auvergne-Rhône-Alpes",
-    city: "Lione",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
 
-  {
-    id: "london-2026",
-    title: "Londra",
-    date: "2026",
-    country: "Regno Unito",
-    region: "England",
-    city: "Londra",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+    // ----------------------------------------------------------
+    // 2012
+    // ----------------------------------------------------------
 
-  {
-    id: "perugia-2026",
-    title: "Perugia",
-    date: "2026",
-    country: "Italia",
-    region: "Umbria",
-    city: "Perugia",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  },
+    {
+      id: "cairo-montenotte-2012",
 
-  {
-    id: "firenze-2026",
-    title: "Firenze",
-    date: "2026",
-    country: "Italia",
-    region: "Toscana",
-    city: "Firenze",
-    excerpt: "",
-    left: "",
-    learned: "",
-    details: [],
-    photos: []
-  }
-]
+      title: "Cairo Montenotte",
 
+      date: "2012",
+
+      country: "ITA",
+      region: "Liguria",
+      city: "Cairo Montenotte",
+
+      kicker: "2012 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2014
+    // ----------------------------------------------------------
+
+    {
+      id: "condove-2014",
+
+      title: "Condove",
+
+      date: "2014",
+
+      country: "ITA",
+      region: "Piemonte",
+      city: "Condove",
+
+      kicker: "2014 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "puglia-2014",
+
+      title: "Puglia",
+
+      date: "2014",
+
+      country: "ITA",
+      region: "Puglia",
+      city: "Bari",
+
+      inferredCapital: true,
+
+      kicker: "2014 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2017
+    // ----------------------------------------------------------
+
+    {
+      id: "venezia-2017",
+
+      title: "Venezia",
+
+      date: "2017",
+
+      country: "ITA",
+      region: "Veneto",
+      city: "Venezia",
+
+      kicker: "2017 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "buenos-aires-2017",
+
+      title: "Buenos Aires",
+
+      date: "2017",
+
+      country: "ARG",
+      region: "Ciudad Autónoma de Buenos Aires",
+      city: "Buenos Aires",
+
+      kicker: "2017 · ARGENTINA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2018
+    // ----------------------------------------------------------
+
+    {
+      id: "milano-2018",
+
+      title: "Milano",
+
+      date: "2018",
+
+      country: "ITA",
+      region: "Lombardia",
+      city: "Milano",
+
+      kicker: "2018 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2019
+    // ----------------------------------------------------------
+
+    {
+      id: "abruzzo-2019",
+
+      title: "Abruzzo",
+
+      date: "2019",
+
+      country: "ITA",
+      region: "Abruzzo",
+      city: "L'Aquila",
+
+      inferredCapital: true,
+
+      kicker: "2019 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2021
+    // ----------------------------------------------------------
+
+    {
+      id: "roma-2021",
+
+      title: "Roma",
+
+      date: "2021",
+
+      country: "ITA",
+      region: "Lazio",
+      city: "Roma",
+
+      kicker: "2021 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "amsterdam-2021",
+
+      title: "Amsterdam",
+
+      date: "2021",
+
+      country: "NLD",
+      region: "Noord-Holland",
+      city: "Amsterdam",
+
+      kicker: "2021 · PAESI BASSI",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "utrecht-2021",
+
+      title: "Utrecht",
+
+      date: "2021",
+
+      country: "NLD",
+      region: "Utrecht",
+      city: "Utrecht",
+
+      kicker: "2021 · PAESI BASSI",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [
+        "2 visits"
+      ],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2024
+    // ----------------------------------------------------------
+
+    {
+      id: "genova-2024",
+
+      title: "Genova",
+
+      date: "2024",
+
+      country: "ITA",
+      region: "Liguria",
+      city: "Genova",
+
+      kicker: "2024 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2025
+    // ----------------------------------------------------------
+
+    {
+      id: "colonia-2025",
+
+      title: "Colonia",
+
+      date: "2025",
+
+      country: "DEU",
+      region: "Nordrhein-Westfalen",
+      city: "Colonia",
+
+      kicker: "2025 · GERMANIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+
+    // ----------------------------------------------------------
+    // 2026
+    // ----------------------------------------------------------
+
+    {
+      id: "aix-en-provence-2026",
+
+      title: "Aix-en-Provence",
+
+      date: "2026",
+
+      country: "FRA",
+      region: "Provence-Alpes-Côte d’Azur",
+      city: "Aix-en-Provence",
+
+      kicker: "2026 · FRANCIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "lione-2026",
+
+      title: "Lione",
+
+      date: "2026",
+
+      country: "FRA",
+      region: "Auvergne-Rhône-Alpes",
+      city: "Lione",
+
+      kicker: "2026 · FRANCIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "londra-2026",
+
+      title: "Londra",
+
+      date: "2026",
+
+      country: "GBR",
+      region: "England",
+      city: "Londra",
+
+      kicker: "2026 · REGNO UNITO",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "umbria-2026",
+
+      title: "Umbria",
+
+      date: "2026",
+
+      country: "ITA",
+      region: "Umbria",
+      city: "Perugia",
+
+      inferredCapital: true,
+
+      kicker: "2026 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    },
+
+    {
+      id: "toscana-2026",
+
+      title: "Toscana",
+
+      date: "2026",
+
+      country: "ITA",
+      region: "Toscana",
+      city: "Firenze",
+
+      inferredCapital: true,
+
+      kicker: "2026 · ITALIA",
+
+      excerpt: "",
+
+      left: "",
+      learned: "",
+
+      details: [],
+
+      photos: []
+    }
+  ]
 };
