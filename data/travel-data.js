@@ -269,6 +269,54 @@ window.TRAVEL_ATLAS_DATA = {
 
       ]
     },
+    
+    // ============================================================
+    // UK
+    // ============================================================
+    {
+  iso3: "GBR",
+  iso2: "GB",
+  name: "Regno Unito",
+  continent: "Europe",
+
+  visits: 1,
+
+  status: "visited",
+
+  coordinates: {
+    lat: 55.3781,
+    lon: -3.4360
+  },
+
+  essence: "Ricordi e impressioni da aggiungere.",
+
+  regions: [
+    {
+      name: "England",
+      visits: 1,
+
+      coordinates: {
+        lat: 52.3555,
+        lon: -1.1743
+      },
+
+      cities: [
+        {
+          name: "Londra",
+
+          coordinates: {
+            lat: 51.5074,
+            lon: -0.1278
+          },
+
+          visits: 1,
+
+          feeling: ""
+        }
+      ]
+    }
+  ]
+},
 
     // ============================================================
     // FRANCIA
