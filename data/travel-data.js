@@ -74,6 +74,7 @@ window.TRAVEL_ATLAS_DATA = {
               },
 
               visits: 26,
+              visitsDisplay: "25+"
 
               feeling: ""
             },
@@ -606,6 +607,216 @@ window.TRAVEL_ATLAS_DATA = {
   //
   // ============================================================
 
-  journeys: []
+  journeys: [
+  {
+    id: "torino-2007",
+    title: "Torino",
+    date: "2007",
+    country: "Italia",
+    region: "Piemonte",
+    city: "Torino",
+    excerpt: "Città di origine, presenza continua dal 2007 al 2026.",
+    left: "Origine, ritorno, continuità.",
+    learned: "",
+    details: ["origin", "returns through 2026"],
+    photos: []
+  },
+
+  {
+    id: "cairo-montenotte-2012",
+    title: "Cairo Montenotte",
+    date: "2012",
+    country: "Italia",
+    region: "Liguria",
+    city: "Cairo Montenotte",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "bari-2014",
+    title: "Bari",
+    date: "2014",
+    country: "Italia",
+    region: "Puglia",
+    city: "Bari",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "buenos-aires-2017",
+    title: "Buenos Aires",
+    date: "2017",
+    country: "Argentina",
+    region: "Ciudad Autónoma de Buenos Aires",
+    city: "Buenos Aires",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "milano-2018",
+    title: "Milano",
+    date: "2018",
+    country: "Italia",
+    region: "Lombardia",
+    city: "Milano",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "laquila-2019",
+    title: "L'Aquila",
+    date: "2019",
+    country: "Italia",
+    region: "Abruzzo",
+    city: "L'Aquila",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "amsterdam-2021",
+    title: "Amsterdam",
+    date: "2021",
+    country: "Paesi Bassi",
+    region: "Noord-Holland",
+    city: "Amsterdam",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "utrecht-2021",
+    title: "Utrecht",
+    date: "2021",
+    country: "Paesi Bassi",
+    region: "Utrecht",
+    city: "Utrecht",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "genova-2024",
+    title: "Genova",
+    date: "2024",
+    country: "Italia",
+    region: "Liguria",
+    city: "Genova",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "colonia-2025",
+    title: "Colonia",
+    date: "2025",
+    country: "Germania",
+    region: "Nordrhein-Westfalen",
+    city: "Colonia",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "aix-2026",
+    title: "Aix-en-Provence",
+    date: "2026",
+    country: "Francia",
+    region: "Provence-Alpes-Côte d'Azur",
+    city: "Aix-en-Provence",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "lyon-2026",
+    title: "Lione",
+    date: "2026",
+    country: "Francia",
+    region: "Auvergne-Rhône-Alpes",
+    city: "Lione",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "london-2026",
+    title: "Londra",
+    date: "2026",
+    country: "Regno Unito",
+    region: "England",
+    city: "Londra",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "perugia-2026",
+    title: "Perugia",
+    date: "2026",
+    country: "Italia",
+    region: "Umbria",
+    city: "Perugia",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  },
+
+  {
+    id: "firenze-2026",
+    title: "Firenze",
+    date: "2026",
+    country: "Italia",
+    region: "Toscana",
+    city: "Firenze",
+    excerpt: "",
+    left: "",
+    learned: "",
+    details: [],
+    photos: []
+  }
+]
 
 };
