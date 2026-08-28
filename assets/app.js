@@ -20,7 +20,7 @@
   function setProfile(){ $$('[data-profile]').forEach(el=>{const key=el.dataset.profile;if(data.profile[key]!=null)el.textContent=data.profile[key]}); if(data.profile.demo)$('#demo-pill').hidden=false; }
   function aggregate(){
     const continents=new Set(countries.map(c=>c.continent));
-    const totalJourneys=journeys.length || countries.reduce((s,c)=>s+(c.visits||0),0);
+    const totalJourneys = journeys.length;
     const vals={countries:countries.length,regions:regions.length,cities:cities.length,journeys:totalJourneys,continents:continents.size,coverage:`${((countries.length/(data.profile.worldCountryCount||195))*100).toFixed(1)}%`};
     Object.entries(vals).forEach(([k,v])=>$$(`[data-stat="${k}"]`).forEach(el=>el.textContent=v));
     return vals;
