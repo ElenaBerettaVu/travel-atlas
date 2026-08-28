@@ -88,3 +88,1360 @@
   function init(){setProfile();aggregate();initTheme();initMenu();initMapControls();initPlaces();initDialog();renderMap();renderCharts();renderJourneys();renderPlaces();let raf;window.addEventListener('resize',()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{renderMap();renderCharts();});});}
   document.addEventListener('DOMContentLoaded',init);
 })();
+
+(() => {
+  "use strict";
+
+  const data =
+    window.TRAVEL_ATLAS_DATA || {
+      countries: [],
+      journeys: []
+    };
+
+  const countries = data.countries || [];
+  const journeys = data.journeys || [];
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  const esc = v =>
+    String(v ?? "").replace(
+      /[&<>"']/g,
+      c =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        })[c]
+    );
+
+  const flag = iso =>
+    iso
+      ? String.fromCodePoint(
+          ...iso
+            .toUpperCase()
+            .split("")
+            .map(c => 127397 + c.charCodeAt())
+        )
+      : "◉";
+
+  const regions = [];
+  const cities = [];
+
+  countries.forEach(c =>
+    (c.regions || []).forEach(r => {
+      regions.push({
+        ...r,
+        countryIso: c.iso3,
+        countryName: c.name
+      });
+
+      (r.cities || []).forEach(x =>
+        cities.push({
+          ...x,
+          regionName: r.name,
+          countryIso: c.iso3,
+          countryName: c.name
+        })
+      );
+    })
+  );
+
+  const cityCount = c =>
+    (c.regions || []).reduce(
+      (s, r) => s + (r.cities || []).length,
+      0
+    );
+
+  const fmt = n =>
+    Number(n || 0)
+      .toFixed(1)
+      .replace(".0", "");
+
+  let selected = countries[0]?.iso3;
+
+  const CSS = `
+  .insight-stat-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:16px
+  }
+
+  .insight-stat{
+    min-height:140px;
+    background:var(--paper);
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between
+  }
+
+  .insight-stat span,
+  .insight-stat small{
+    font:10px var(--mono);
+    text-transform:uppercase;
+    color:var(--muted)
+  }
+
+  .insight-stat strong{
+    font-size:clamp(30px,3vw,48px);
+    line-height:.95;
+    letter-spacing:-.055em;
+    overflow-wrap:anywhere
+  }
+
+  .country-rank{
+    display:grid
+  }
+
+  .country-rank button{
+    border:0;
+    border-bottom:1px solid var(--line);
+    background:transparent;
+    display:grid;
+    grid-template-columns:minmax(150px,1.1fr) minmax(150px,3fr) 42px;
+    gap:18px;
+    align-items:center;
+    text-align:left;
+    padding:13px 0
+  }
+
+  .country-rank__name{
+    display:flex;
+    gap:9px;
+    align-items:center;
+    font-weight:600
+  }
+
+  .country-rank__bar{
+    height:12px;
+    background:var(--line);
+    border-radius:99px;
+    overflow:hidden
+  }
+
+  .country-rank__bar i{
+    display:block;
+    height:100%;
+    background:var(--blue);
+    border-radius:99px
+  }
+
+  .country-rank button:hover .country-rank__bar i{
+    background:var(--orange)
+  }
+
+  .country-rank button>strong{
+    font:11px var(--mono);
+    text-align:right
+  }
+
+  .return-box{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:22px;
+    align-items:end;
+    margin:26px 0
+  }
+
+  .return-box>strong{
+    font-size:90px;
+    line-height:.75;
+    letter-spacing:-.08em
+  }
+
+  .return-box p{
+    margin:0;
+    color:var(--muted)
+  }
+
+  .return-track{
+    display:flex;
+    height:18px;
+    border-radius:99px;
+    overflow:hidden;
+    background:var(--line)
+  }
+
+  .return-track i:first-child{
+    background:var(--blue)
+  }
+
+  .return-track i:last-child{
+    background:var(--acid)
+  }
+
+  .return-list{
+    margin-top:18px;
+    border-top:1px solid var(--line)
+  }
+
+  .return-list div{
+    display:flex;
+    justify-content:space-between;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13px
+  }
+
+  .return-list b{
+    font:11px var(--mono)
+  }
+
+  .country-explorer{
+    padding:0
+  }
+
+  .country-explorer .viz-head{
+    padding:28px 28px 0
+  }
+
+  .country-tabs{
+    display:flex;
+    gap:6px;
+    padding:0 28px 22px;
+    overflow:auto
+  }
+
+  .country-tabs button{
+    border:1px solid var(--line);
+    background:transparent;
+    border-radius:99px;
+    padding:9px 12px;
+    white-space:nowrap
+  }
+
+  .country-tabs button.is-active{
+    background:var(--ink);
+    color:var(--bg)
+  }
+
+  .country-body{
+    border-top:1px solid var(--line)
+  }
+
+  .country-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:end;
+    gap:25px;
+    padding:28px
+  }
+
+  .country-title h3{
+    font-size:clamp(48px,6vw,90px);
+    line-height:.9;
+    letter-spacing:-.065em;
+    margin:8px 0 0
+  }
+
+  .country-title p{
+    color:var(--muted);
+    margin:0 0 8px
+  }
+
+  .country-snapshot{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line)
+  }
+
+  .country-snapshot div{
+    padding:20px 28px;
+    border-right:1px solid var(--line)
+  }
+
+  .country-snapshot div:last-child{
+    border-right:0
+  }
+
+  .country-snapshot strong{
+    display:block;
+    font-size:34px
+  }
+
+  .country-snapshot span{
+    font:10px var(--mono);
+    text-transform:uppercase;
+    color:var(--muted)
+  }
+
+  .country-detail{
+    display:grid;
+    grid-template-columns:1fr 1fr
+  }
+
+  .country-detail section{
+    padding:28px
+  }
+
+  .country-detail section:first-child{
+    border-right:1px solid var(--line)
+  }
+
+  .mini-head{
+    font:10px var(--mono);
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:15px
+  }
+
+  .region-row,
+  .city-row{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 40px;
+    gap:12px;
+    align-items:center;
+    min-height:55px;
+    border-top:1px solid var(--line)
+  }
+
+  .region-row span,
+  .city-row span{
+    font-size:11px;
+    color:var(--muted)
+  }
+
+  .region-row b,
+  .city-row b{
+    font:11px var(--mono);
+    text-align:right
+  }
+
+  .dots{
+    display:flex;
+    gap:4px;
+    flex-wrap:wrap
+  }
+
+  .dots i{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--blue)
+  }
+
+  .dots i.empty{
+    background:transparent;
+    border:1px solid var(--line-strong)
+  }
+
+  .citybar{
+    height:8px;
+    background:var(--line);
+    border-radius:99px;
+    overflow:hidden
+  }
+
+  .citybar i{
+    display:block;
+    height:100%;
+    background:var(--orange)
+  }
+
+  .depth-table{
+    border-top:1px solid var(--line)
+  }
+
+  .depth-row{
+    display:grid;
+    grid-template-columns:minmax(160px,1.4fr) repeat(3,1fr);
+    gap:10px;
+    min-height:56px;
+    align-items:center;
+    border-bottom:1px solid var(--line)
+  }
+
+  .depth-row.head{
+    min-height:36px;
+    font:10px var(--mono);
+    text-transform:uppercase;
+    color:var(--muted)
+  }
+
+  .depth-cell{
+    height:32px;
+    padding:0 9px;
+    display:flex;
+    align-items:center;
+    position:relative;
+    background:var(--line);
+    overflow:hidden
+  }
+
+  .depth-cell:before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:var(--fill);
+    background:color-mix(in srgb,var(--blue) 35%,transparent)
+  }
+
+  .depth-cell b{
+    position:relative;
+    font:11px var(--mono)
+  }
+
+  .timeline-empty{
+    height:100%;
+    min-height:285px;
+    border:1px dashed var(--line-strong);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:30px;
+    text-align:center;
+    color:var(--muted)
+  }
+
+  .timeline-empty strong{
+    display:block;
+    color:var(--ink);
+    font-size:19px;
+    margin-bottom:8px
+  }
+
+  .timeline-empty p{
+    max-width:560px;
+    margin:0
+  }
+
+  .timeline-empty code{
+    font-family:var(--mono);
+    color:var(--ink)
+  }
+
+  @media(max-width:1000px){
+    .insight-stat-grid{
+      grid-template-columns:repeat(2,1fr)
+    }
+
+    .country-detail{
+      grid-template-columns:1fr
+    }
+
+    .country-detail section:first-child{
+      border-right:0;
+      border-bottom:1px solid var(--line)
+    }
+  }
+
+  @media(max-width:700px){
+    .insight-stat{
+      min-height:120px;
+      padding:16px
+    }
+
+    .insight-stat strong{
+      font-size:30px
+    }
+
+    .country-rank button{
+      grid-template-columns:105px 1fr 32px;
+      gap:9px
+    }
+
+    .country-explorer .viz-head{
+      padding:20px 20px 0
+    }
+
+    .country-tabs{
+      padding:0 20px 18px
+    }
+
+    .country-title{
+      display:block;
+      padding:22px 20px
+    }
+
+    .country-title h3{
+      font-size:50px;
+      margin-bottom:16px
+    }
+
+    .country-snapshot{
+      grid-template-columns:1fr 1fr
+    }
+
+    .country-snapshot div{
+      padding:16px 20px
+    }
+
+    .country-snapshot div:nth-child(2){
+      border-right:0
+    }
+
+    .country-detail section{
+      padding:22px 20px
+    }
+
+    .depth-row{
+      grid-template-columns:105px repeat(3,1fr);
+      font-size:11px
+    }
+  }
+  `;
+
+  function install() {
+    if ($("#atlas-insights-style")) return;
+
+    const st = document.createElement("style");
+    st.id = "atlas-insights-style";
+    st.textContent = CSS;
+    document.head.appendChild(st);
+
+    const grid = $("#data .viz-grid");
+
+    if (!grid) return;
+
+    grid.insertAdjacentHTML(
+      "beforebegin",
+      `
+      <div class="insight-stat-grid">
+
+        <article class="insight-stat">
+          <span>Recorded visits</span>
+          <strong data-i="visits">—</strong>
+          <small>country-level minimum</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Repeat countries</span>
+          <strong data-i="repeatCountries">—</strong>
+          <small>visited more than once</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Repeat cities</span>
+          <strong data-i="repeatCities">—</strong>
+          <small>places that pulled you back</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Avg. cities / country</span>
+          <strong data-i="avgCities">—</strong>
+          <small>geographic breadth</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Avg. regions / country</span>
+          <strong data-i="avgRegions">—</strong>
+          <small>regional depth</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Most visited country</span>
+          <strong data-i="topCountry">—</strong>
+          <small>by recorded visits</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Most visited city</span>
+          <strong data-i="topCity">—</strong>
+          <small>strongest return</small>
+        </article>
+
+        <article class="insight-stat">
+          <span>Most explored country</span>
+          <strong data-i="deepCountry">—</strong>
+          <small>regions + cities</small>
+        </article>
+
+      </div>
+      `
+    );
+
+    grid.insertAdjacentHTML(
+      "afterbegin",
+      `
+      <article class="viz-card viz-card--wide">
+
+        <div class="viz-head">
+          <div>
+            <span class="micro">COUNTRIES BY VISITS</span>
+            <h3>Where do you keep going back?</h3>
+          </div>
+
+          <div class="viz-key">Click a country</div>
+        </div>
+
+        <div id="country-rank" class="country-rank"></div>
+
+      </article>
+
+
+      <article class="viz-card">
+
+        <div class="viz-head">
+          <div>
+            <span class="micro">RETURN PROFILE</span>
+            <h3>Which places pulled you back?</h3>
+          </div>
+        </div>
+
+        <div id="return-profile"></div>
+
+      </article>
+
+
+      <article class="viz-card">
+
+        <div class="viz-head">
+          <div>
+            <span class="micro">DATA COMPLETENESS</span>
+            <h3>What is still missing?</h3>
+          </div>
+        </div>
+
+        <div class="return-box">
+          <strong data-i="regionOnly">—</strong>
+          <p>visited regions still need a city.</p>
+        </div>
+
+        <p class="viz-note">
+          Useful for Toscana and Umbria:
+          a region can stay recorded even before you add individual cities.
+        </p>
+
+      </article>
+
+
+      <article
+        class="viz-card viz-card--wide country-explorer"
+        id="country-explorer"
+      >
+
+        <div class="viz-head">
+          <div>
+            <span class="micro">COUNTRY EXPLORER</span>
+            <h3>One country at a time.</h3>
+          </div>
+
+          <div class="viz-key">
+            Country → region → city
+          </div>
+        </div>
+
+        <div
+          id="country-tabs"
+          class="country-tabs"
+        ></div>
+
+        <div
+          id="country-body"
+          class="country-body"
+        ></div>
+
+      </article>
+
+
+      <article class="viz-card viz-card--wide">
+
+        <div class="viz-head">
+          <div>
+            <span class="micro">GEOGRAPHIC DEPTH</span>
+            <h3>How deeply is each country mapped?</h3>
+          </div>
+
+          <div class="viz-key">
+            Relative intensity
+          </div>
+        </div>
+
+        <div
+          id="depth-table"
+          class="depth-table"
+        ></div>
+
+      </article>
+      `
+    );
+  }
+
+  function stats() {
+    const visits = countries.reduce(
+      (s, c) => s + (c.visits || 0),
+      0
+    );
+
+    const repeatCountries =
+      countries.filter(c => (c.visits || 0) > 1).length;
+
+    const repeatCities =
+      cities.filter(c => (c.visits || 0) > 1).length;
+
+    const topCountry = [...countries].sort(
+      (a, b) => (b.visits || 0) - (a.visits || 0)
+    )[0];
+
+    const topCity = [...cities].sort(
+      (a, b) => (b.visits || 0) - (a.visits || 0)
+    )[0];
+
+    const deep = [...countries].sort(
+      (a, b) =>
+        ((b.regions || []).length + cityCount(b)) -
+        ((a.regions || []).length + cityCount(a))
+    )[0];
+
+    const vals = {
+      visits,
+
+      repeatCountries,
+
+      repeatCities,
+
+      avgCities: fmt(
+        cities.length /
+          Math.max(1, countries.length)
+      ),
+
+      avgRegions: fmt(
+        regions.length /
+          Math.max(1, countries.length)
+      ),
+
+      topCountry:
+        topCountry?.name || "—",
+
+      topCity:
+        topCity?.name || "—",
+
+      deepCountry:
+        deep?.name || "—",
+
+      regionOnly:
+        regions.filter(
+          r => !(r.cities || []).length
+        ).length
+    };
+
+    Object.entries(vals).forEach(
+      ([k, v]) =>
+        $$(`[data-i="${k}"]`).forEach(
+          el => (el.textContent = v)
+        )
+    );
+
+    /*
+     * Important:
+     * Journeys means real journey stories,
+     * not total recorded country visits.
+     */
+    $$('[data-stat="journeys"]').forEach(
+      el => (el.textContent = journeys.length)
+    );
+  }
+
+  function timeline() {
+    /*
+     * We can only plot a temporal chart when
+     * actual journey dates exist.
+     */
+    if (
+      journeys.some(j =>
+        /^\d{4}/.test(
+          String(j.date || "")
+        )
+      )
+    ) {
+      return;
+    }
+
+    const host = $("#timeline-chart");
+    const range = $("#year-range");
+
+    if (!host) return;
+
+    if (range) {
+      range.textContent = "DATES NEEDED";
+    }
+
+    host.innerHTML = `
+      <div class="timeline-empty">
+
+        <div>
+
+          <strong>
+            No travel dates yet.
+          </strong>
+
+          <p>
+            This chart reads
+            <code>journeys[].date</code>.
+
+            Your current
+            <code>journeys</code>
+            array is empty, so there is
+            no timeline to plot yet.
+          </p>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  function rank() {
+    const host = $("#country-rank");
+
+    if (!host) return;
+
+    const arr = [...countries].sort(
+      (a, b) =>
+        (b.visits || 0) -
+        (a.visits || 0)
+    );
+
+    const max = Math.max(
+      1,
+      ...arr.map(c => c.visits || 0)
+    );
+
+    host.innerHTML = arr
+      .map(
+        c => `
+        <button data-rank="${esc(c.iso3)}">
+
+          <span class="country-rank__name">
+            ${flag(c.iso2)}
+            ${esc(c.name)}
+          </span>
+
+          <span class="country-rank__bar">
+            <i
+              style="
+                width:
+                ${Math.max(
+                  4,
+                  ((c.visits || 0) / max) * 100
+                )}%
+              "
+            ></i>
+          </span>
+
+          <strong>
+            ${c.visits || 0}
+          </strong>
+
+        </button>
+        `
+      )
+      .join("");
+
+    $$("[data-rank]", host).forEach(
+      b =>
+        (b.onclick = () => {
+          selected = b.dataset.rank;
+
+          explorer();
+
+          $("#country-explorer")
+            ?.scrollIntoView({
+              behavior: "smooth",
+              block: "center"
+            });
+        })
+    );
+  }
+
+  function returns() {
+    const host = $("#return-profile");
+
+    if (!host) return;
+
+    const repeated = cities
+      .filter(
+        c => (c.visits || 0) > 1
+      )
+      .sort(
+        (a, b) =>
+          (b.visits || 0) -
+          (a.visits || 0)
+      );
+
+    const once =
+      cities.length - repeated.length;
+
+    const total =
+      Math.max(1, cities.length);
+
+    const rp =
+      (repeated.length / total) * 100;
+
+    host.innerHTML = `
+
+      <div class="return-box">
+
+        <strong>
+          ${repeated.length}
+        </strong>
+
+        <p>
+          cities pulled you back.
+          <br>
+          ${once} cities currently have
+          one recorded visit.
+        </p>
+
+      </div>
+
+
+      <div class="return-track">
+
+        <i
+          style="
+            width:${100 - rp}%
+          "
+        ></i>
+
+        <i
+          style="
+            width:${rp}%
+          "
+        ></i>
+
+      </div>
+
+
+      <div class="return-list">
+
+        ${
+          repeated
+            .map(
+              c => `
+              <div>
+                <span>
+                  ${esc(c.name)}
+                </span>
+
+                <b>
+                  ${c.visits}×
+                </b>
+              </div>
+              `
+            )
+            .join("") ||
+          "<div>No repeated cities yet.</div>"
+        }
+
+      </div>
+    `;
+  }
+
+  function explorer() {
+    const tabs = $("#country-tabs");
+    const host = $("#country-body");
+
+    if (
+      !tabs ||
+      !host ||
+      !countries.length
+    ) {
+      return;
+    }
+
+    const c =
+      countries.find(
+        x => x.iso3 === selected
+      ) || countries[0];
+
+    selected = c.iso3;
+
+    const cc =
+      (c.regions || [])
+        .flatMap(r =>
+          (r.cities || []).map(
+            x => ({
+              ...x,
+              region: r.name
+            })
+          )
+        );
+
+    const max =
+      Math.max(
+        1,
+        ...cc.map(
+          x => x.visits || 0
+        )
+      );
+
+    tabs.innerHTML =
+      countries
+        .map(
+          x => `
+          <button
+            data-country="${x.iso3}"
+            class="${
+              x.iso3 === selected
+                ? "is-active"
+                : ""
+            }"
+          >
+            ${flag(x.iso2)}
+            ${esc(x.name)}
+          </button>
+          `
+        )
+        .join("");
+
+    host.innerHTML = `
+
+      <div class="country-title">
+
+        <div>
+
+          <span class="micro">
+            COUNTRY SNAPSHOT
+          </span>
+
+          <h3>
+            ${flag(c.iso2)}
+            ${esc(c.name)}
+          </h3>
+
+        </div>
+
+        <p>
+          ${c.visits || 0}
+          recorded visits ·
+          ${(c.regions || []).length}
+          regions ·
+          ${cc.length}
+          cities
+        </p>
+
+      </div>
+
+
+      <div class="country-snapshot">
+
+        <div>
+          <strong>
+            ${c.visits || 0}
+          </strong>
+          <span>visits</span>
+        </div>
+
+        <div>
+          <strong>
+            ${(c.regions || []).length}
+          </strong>
+          <span>regions</span>
+        </div>
+
+        <div>
+          <strong>
+            ${cc.length}
+          </strong>
+          <span>cities</span>
+        </div>
+
+        <div>
+          <strong>
+            ${
+              cc.filter(
+                x =>
+                  (x.visits || 0) > 1
+              ).length
+            }
+          </strong>
+          <span>
+            repeated cities
+          </span>
+        </div>
+
+      </div>
+
+
+      <div class="country-detail">
+
+        <section>
+
+          <div class="mini-head">
+            Regional footprint
+          </div>
+
+          ${
+            (c.regions || [])
+              .map(r => {
+                const n =
+                  (r.cities || []).length;
+
+                return `
+                <div class="region-row">
+
+                  <div>
+                    <strong>
+                      ${esc(r.name)}
+                    </strong>
+
+                    <br>
+
+                    <span>
+                      ${
+                        n
+                          ? n + " cities"
+                          : "region only"
+                      }
+                    </span>
+                  </div>
+
+                  <div class="dots">
+                    ${
+                      n
+                        ? Array.from(
+                            {
+                              length:
+                                Math.min(
+                                  n,
+                                  10
+                                )
+                            },
+                            () => "<i></i>"
+                          ).join("")
+                        : '<i class="empty"></i>'
+                    }
+                  </div>
+
+                  <b>
+                    ${r.visits || 0}×
+                  </b>
+
+                </div>
+                `;
+              })
+              .join("")
+          }
+
+        </section>
+
+
+        <section>
+
+          <div class="mini-head">
+            City ranking
+          </div>
+
+          ${
+            cc.length
+              ? cc
+                  .sort(
+                    (a, b) =>
+                      (b.visits || 0) -
+                      (a.visits || 0)
+                  )
+                  .map(
+                    x => `
+                    <div class="city-row">
+
+                      <div>
+
+                        <strong>
+                          ${esc(x.name)}
+                        </strong>
+
+                        <br>
+
+                        <span>
+                          ${esc(x.region)}
+                        </span>
+
+                      </div>
+
+
+                      <div class="citybar">
+
+                        <i
+                          style="
+                            width:
+                            ${Math.max(
+                              4,
+                              ((x.visits || 0) /
+                                max) *
+                                100
+                            )}%
+                          "
+                        ></i>
+
+                      </div>
+
+
+                      <b>
+                        ${x.visits || 0}×
+                      </b>
+
+                    </div>
+                    `
+                  )
+                  .join("")
+              : `
+                <p class="viz-note">
+                  Cities not specified yet.
+                </p>
+                `
+          }
+
+        </section>
+
+      </div>
+    `;
+
+    $$(
+      "[data-country]",
+      tabs
+    ).forEach(
+      b =>
+        (b.onclick = () => {
+          selected =
+            b.dataset.country;
+
+          explorer();
+        })
+    );
+  }
+
+  function depth() {
+    const host =
+      $("#depth-table");
+
+    if (!host) return;
+
+    const rows =
+      countries.map(c => ({
+        c,
+        r:
+          (c.regions || []).length,
+        ct:
+          cityCount(c),
+        v:
+          c.visits || 0
+      }));
+
+    const mr =
+      Math.max(
+        1,
+        ...rows.map(x => x.r)
+      );
+
+    const mc =
+      Math.max(
+        1,
+        ...rows.map(x => x.ct)
+      );
+
+    const mv =
+      Math.max(
+        1,
+        ...rows.map(x => x.v)
+      );
+
+    host.innerHTML = `
+
+      <div class="depth-row head">
+
+        <span>
+          Country
+        </span>
+
+        <span>
+          Regions
+        </span>
+
+        <span>
+          Cities
+        </span>
+
+        <span>
+          Visits
+        </span>
+
+      </div>
+
+
+      ${
+        rows
+          .map(
+            x => `
+            <div class="depth-row">
+
+              <strong>
+                ${flag(x.c.iso2)}
+                ${esc(x.c.name)}
+              </strong>
+
+
+              <span
+                class="depth-cell"
+                style="
+                  --fill:
+                  ${(x.r / mr) * 100}%
+                "
+              >
+                <b>
+                  ${x.r}
+                </b>
+              </span>
+
+
+              <span
+                class="depth-cell"
+                style="
+                  --fill:
+                  ${(x.ct / mc) * 100}%
+                "
+              >
+                <b>
+                  ${x.ct}
+                </b>
+              </span>
+
+
+              <span
+                class="depth-cell"
+                style="
+                  --fill:
+                  ${(x.v / mv) * 100}%
+                "
+              >
+                <b>
+                  ${x.v}
+                </b>
+              </span>
+
+            </div>
+            `
+          )
+          .join("")
+      }
+    `;
+  }
+
+  function init() {
+    install();
+
+    stats();
+
+    timeline();
+
+    rank();
+
+    returns();
+
+    explorer();
+
+    depth();
+  }
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    init
+  );
+})();
