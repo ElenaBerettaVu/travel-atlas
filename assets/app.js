@@ -1447,3 +1447,2224 @@
     init
   );
 })();
+
+(() => {
+  "use strict";
+
+  const data =
+    window.TRAVEL_ATLAS_DATA || {
+      profile: {},
+      countries: [],
+      journeys: []
+    };
+
+  const countries = data.countries || [];
+  const journeys = data.journeys || [];
+
+  const world =
+    window.WORLD_GEOJSON ||
+    window.WORLD_GEO ||
+    window.worldGeoJSON ||
+    null;
+
+  const $ = (s, root = document) =>
+    root.querySelector(s);
+
+  const $$ = (s, root = document) =>
+    [...root.querySelectorAll(s)];
+
+  const esc = v =>
+    String(v ?? "").replace(
+      /[&<>"']/g,
+      c =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        })[c]
+    );
+
+  const visitLabel = item =>
+    item?.visitsDisplay ||
+    String(item?.visits ?? 0);
+
+
+  // ============================================================
+  // FIND ORIGIN COUNTRY
+  // ============================================================
+
+  const originIso =
+    data.profile?.originCountryIso ||
+    countries.find(c => c.originCountry)?.iso3 ||
+    "ITA";
+
+  const italy =
+    countries.find(c => c.iso3 === originIso);
+
+  if (!italy) return;
+
+
+  const italyRegions =
+    (italy.regions || []).map(r => ({
+      ...r,
+      countryIso: italy.iso3
+    }));
+
+
+  const italyCities =
+    italyRegions.flatMap(region =>
+      (region.cities || []).map(city => ({
+        ...city,
+        regionName: region.name
+      }))
+    );
+
+
+  const italyJourneys =
+    journeys.filter(j => j.country === italy.iso3);
+
+
+  let italyLevel = "region";
+  let italySelected = null;
+
+
+  // ============================================================
+  // STYLES
+  // ============================================================
+
+  const CSS = `
+
+  .italy-focus {
+    background: var(--ink);
+    color: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+
+
+  .italy-focus .section-index,
+  .italy-focus .micro,
+  .italy-focus .kicker {
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 62%,
+        transparent
+      );
+  }
+
+
+  .italy-focus .section-head > p {
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 68%,
+        transparent
+      );
+  }
+
+
+  .italy-origin-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    border:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 24%,
+        transparent
+      );
+
+    border-radius: 999px;
+
+    padding: 8px 12px;
+    margin-top: 18px;
+
+    font: 10px var(--mono);
+
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+
+  .italy-origin-note:before {
+    content: "";
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: var(--acid);
+
+    box-shadow:
+      0 0 0 5px
+      color-mix(
+        in srgb,
+        var(--acid) 18%,
+        transparent
+      );
+  }
+
+
+  /* =========================================================
+     MAIN ITALY MAP
+     ========================================================= */
+
+  .italy-focus__shell {
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1.55fr)
+      minmax(320px, .75fr);
+
+    border:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 20%,
+        transparent
+      );
+
+    background:
+      color-mix(
+        in srgb,
+        var(--paper) 5%,
+        transparent
+      );
+  }
+
+
+  .italy-map-wrap {
+    min-height: 720px;
+
+    position: relative;
+    overflow: hidden;
+
+    border-right:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 20%,
+        transparent
+      );
+  }
+
+
+  .italy-map {
+    height: 720px;
+    position: relative;
+  }
+
+
+  .italy-map svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+
+  .italy-map-toolbar {
+    position: absolute;
+
+    left: 18px;
+    top: 18px;
+
+    z-index: 4;
+
+    display: flex;
+    gap: 6px;
+
+    padding: 5px;
+
+    background:
+      color-mix(
+        in srgb,
+        var(--ink) 80%,
+        transparent
+      );
+
+    backdrop-filter: blur(12px);
+
+    border:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+
+    border-radius: 999px;
+  }
+
+
+  .italy-map-toolbar button {
+    border: 0;
+
+    background: transparent;
+    color: var(--bg);
+
+    padding: 8px 12px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+  }
+
+
+  .italy-map-toolbar button.is-active {
+    background: var(--acid);
+    color: var(--ink);
+  }
+
+
+  .italy-map-caption {
+    position: absolute;
+
+    left: 18px;
+    bottom: 18px;
+
+    font: 10px var(--mono);
+
+    text-transform: uppercase;
+    letter-spacing: .08em;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 70%,
+        transparent
+      );
+  }
+
+
+  .italy-map-tooltip {
+    position: absolute;
+
+    pointer-events: none;
+
+    background: var(--bg);
+    color: var(--ink);
+
+    padding: 10px 12px;
+
+    font-size: 12px;
+
+    z-index: 5;
+
+    opacity: 0;
+
+    transform:
+      translate(-999px, -999px);
+
+    transition: opacity .15s;
+  }
+
+
+  .italy-map-tooltip.is-visible {
+    opacity: 1;
+  }
+
+
+  /* =========================================================
+     RIGHT PANEL
+     ========================================================= */
+
+  .italy-panel {
+    padding: 30px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 26px;
+  }
+
+
+  .italy-panel__eyebrow {
+    font: 10px var(--mono);
+
+    text-transform: uppercase;
+    letter-spacing: .09em;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 58%,
+        transparent
+      );
+  }
+
+
+  .italy-panel h3 {
+    font-size:
+      clamp(52px, 6vw, 90px);
+
+    line-height: .82;
+
+    letter-spacing: -.07em;
+
+    margin: 4px 0 0;
+  }
+
+
+  .italy-panel__lead {
+    font-size: 18px;
+    line-height: 1.25;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 72%,
+        transparent
+      );
+
+    max-width: 430px;
+
+    margin: 0;
+  }
+
+
+  .italy-metrics {
+    display: grid;
+
+    grid-template-columns:
+      repeat(2, 1fr);
+
+    border:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+  }
+
+
+  .italy-metric {
+    padding: 18px;
+
+    border-right:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+
+    border-bottom:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+  }
+
+
+  .italy-metric:nth-child(2n) {
+    border-right: 0;
+  }
+
+
+  .italy-metric:nth-last-child(-n+2) {
+    border-bottom: 0;
+  }
+
+
+  .italy-metric strong {
+    display: block;
+
+    font-size: 34px;
+    letter-spacing: -.05em;
+  }
+
+
+  .italy-metric span {
+    font: 10px var(--mono);
+
+    text-transform: uppercase;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 55%,
+        transparent
+      );
+  }
+
+
+  .italy-detail {
+    border-top:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+
+    padding-top: 18px;
+  }
+
+
+  .italy-detail__title {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: start;
+
+    gap: 18px;
+  }
+
+
+  .italy-detail__title strong {
+    font-size: 24px;
+  }
+
+
+  .italy-detail__title span {
+    font: 10px var(--mono);
+
+    text-transform: uppercase;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 55%,
+        transparent
+      );
+  }
+
+
+  .italy-detail p {
+    margin: 10px 0 0;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 68%,
+        transparent
+      );
+  }
+
+
+  /* =========================================================
+     LOWER DATA GRID
+     ========================================================= */
+
+  .italy-data-grid {
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr;
+
+    gap: 1px;
+
+    margin-top: 24px;
+
+    background:
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+
+    border:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 18%,
+        transparent
+      );
+  }
+
+
+  .italy-card {
+    background: var(--ink);
+
+    padding: 30px;
+
+    min-height: 420px;
+  }
+
+
+  .italy-card--wide {
+    grid-column: 1 / -1;
+
+    min-height: auto;
+  }
+
+
+  .italy-card h3 {
+    font-size: 28px;
+
+    letter-spacing: -.04em;
+
+    margin: 6px 0 24px;
+  }
+
+
+  .italy-region-row,
+  .italy-city-row {
+    display: grid;
+
+    grid-template-columns:
+      minmax(130px, 1.2fr)
+      minmax(120px, 2fr)
+      auto;
+
+    gap: 14px;
+
+    align-items: center;
+
+    padding: 12px 0;
+
+    border-top:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 16%,
+        transparent
+      );
+  }
+
+
+  .italy-region-row button,
+  .italy-city-row button {
+    border: 0;
+
+    background: transparent;
+    color: inherit;
+
+    text-align: left;
+
+    padding: 0;
+
+    font-weight: 600;
+  }
+
+
+  .italy-region-row small,
+  .italy-city-row small {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 55%,
+        transparent
+      );
+  }
+
+
+  .italy-bar {
+    height: 8px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background:
+      color-mix(
+        in srgb,
+        var(--bg) 14%,
+        transparent
+      );
+  }
+
+
+  .italy-bar i {
+    display: block;
+
+    height: 100%;
+
+    border-radius: 999px;
+
+    background: var(--acid);
+  }
+
+
+  .italy-region-row b,
+  .italy-city-row b {
+    font: 11px var(--mono);
+  }
+
+
+  /* =========================================================
+     ITALIAN TIMELINE
+     ========================================================= */
+
+  .italy-timeline {
+    display: grid;
+
+    gap: 0;
+
+    overflow-x: auto;
+
+    padding-bottom: 8px;
+  }
+
+
+  .italy-year {
+    min-width: 78px;
+
+    position: relative;
+
+    border-top:
+      1px solid
+      color-mix(
+        in srgb,
+        var(--bg) 25%,
+        transparent
+      );
+
+    padding: 14px 10px 0;
+  }
+
+
+  .italy-year:before {
+    content: "";
+
+    position: absolute;
+
+    width: 8px;
+    height: 8px;
+
+    top: -4px;
+    left: 10px;
+
+    border-radius: 50%;
+
+    background:
+      color-mix(
+        in srgb,
+        var(--bg) 25%,
+        transparent
+      );
+  }
+
+
+  .italy-year.has-trip:before {
+    background: var(--orange);
+
+    box-shadow:
+      0 0 0 5px
+      color-mix(
+        in srgb,
+        var(--orange) 18%,
+        transparent
+      );
+  }
+
+
+  .italy-year.origin:before {
+    background: var(--acid);
+  }
+
+
+  .italy-year strong {
+    font: 11px var(--mono);
+  }
+
+
+  .italy-year span {
+    display: block;
+
+    margin-top: 7px;
+
+    font-size: 12px;
+
+    color:
+      color-mix(
+        in srgb,
+        var(--bg) 60%,
+        transparent
+      );
+  }
+
+
+  .italy-year.origin span {
+    color: var(--acid);
+  }
+
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+
+  @media(max-width: 1000px) {
+
+    .italy-focus__shell {
+      grid-template-columns: 1fr;
+    }
+
+    .italy-map-wrap {
+      border-right: 0;
+
+      border-bottom:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--bg) 20%,
+          transparent
+        );
+    }
+
+    .italy-data-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .italy-card--wide {
+      grid-column: auto;
+    }
+  }
+
+
+  @media(max-width: 700px) {
+
+    .italy-focus__shell {
+      margin-left: -20px;
+      margin-right: -20px;
+    }
+
+    .italy-map-wrap,
+    .italy-map {
+      min-height: 560px;
+      height: 560px;
+    }
+
+    .italy-panel {
+      padding: 22px 20px;
+    }
+
+    .italy-data-grid {
+      margin-left: -20px;
+      margin-right: -20px;
+    }
+
+    .italy-card {
+      padding: 24px 20px;
+    }
+
+    .italy-region-row,
+    .italy-city-row {
+      grid-template-columns:
+        105px 1fr auto;
+
+      gap: 9px;
+    }
+  }
+  `;
+
+
+  // ============================================================
+  // INSTALL HTML
+  // ============================================================
+
+  function installSection() {
+
+    if ($("#italy-focus")) return;
+
+
+    const style =
+      document.createElement("style");
+
+    style.id = "italy-focus-style";
+    style.textContent = CSS;
+
+    document.head.appendChild(style);
+
+
+    const atlas = $("#atlas");
+
+    if (!atlas) return;
+
+
+    atlas.insertAdjacentHTML(
+      "afterend",
+      `
+
+      <section
+        class="italy-focus section"
+        id="italy-focus"
+      >
+
+        <div class="section-head">
+
+          <div>
+
+            <span class="section-index">
+              02
+            </span>
+
+            <p class="kicker">
+              Origin geography
+            </p>
+
+            <span class="italy-origin-note">
+              Home country · since
+              ${esc(italy.originSince || 2007)}
+            </span>
+
+          </div>
+
+
+          <h2>
+            Italy is not<br>
+            just another pin.
+          </h2>
+
+
+          <p>
+            È il paese d'origine:
+            la parte della mappa con più ritorni,
+            più continuità e una geografia molto
+            più densa del resto dell'atlante.
+          </p>
+
+        </div>
+
+
+        <div class="italy-focus__shell">
+
+          <div class="italy-map-wrap">
+
+            <div
+              class="italy-map-toolbar"
+              role="group"
+              aria-label="Italy map level"
+            >
+
+              <button
+                type="button"
+                class="is-active"
+                data-italy-level="region"
+              >
+                Regions
+              </button>
+
+              <button
+                type="button"
+                data-italy-level="city"
+              >
+                Cities
+              </button>
+
+            </div>
+
+
+            <div
+              id="italy-map"
+              class="italy-map"
+              aria-label="Mappa dell'Italia e dei luoghi visitati"
+            ></div>
+
+
+            <div
+              class="italy-map-caption"
+              id="italy-map-caption"
+            ></div>
+
+          </div>
+
+
+          <aside class="italy-panel">
+
+            <div>
+
+              <span class="italy-panel__eyebrow">
+                ITALIA / ORIGIN COUNTRY
+              </span>
+
+              <h3>
+                ${visitLabel(italy)}
+              </h3>
+
+              <p class="italy-panel__lead">
+                visite registrate come minimo.
+                Torino resta volutamente
+                <strong>25+</strong>:
+                il dato esatto non serve per capire
+                il peso che ha nella mappa.
+              </p>
+
+            </div>
+
+
+            <div class="italy-metrics">
+
+              <div class="italy-metric">
+
+                <strong>
+                  ${italyRegions.length}
+                </strong>
+
+                <span>
+                  regions
+                </span>
+
+              </div>
+
+
+              <div class="italy-metric">
+
+                <strong>
+                  ${italyCities.length}
+                </strong>
+
+                <span>
+                  cities
+                </span>
+
+              </div>
+
+
+              <div class="italy-metric">
+
+                <strong>
+                  ${italyJourneys.length}
+                </strong>
+
+                <span>
+                  dated entries
+                </span>
+
+              </div>
+
+
+              <div class="italy-metric">
+
+                <strong>
+                  ${
+                    Math.max(
+                      0,
+                      2026 -
+                      (italy.originSince || 2007) +
+                      1
+                    )
+                  }
+                </strong>
+
+                <span>
+                  years in atlas
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="italy-detail"
+              id="italy-detail"
+            ></div>
+
+          </aside>
+
+        </div>
+
+
+        <div class="italy-data-grid">
+
+
+          <article class="italy-card">
+
+            <span class="micro">
+              REGIONAL FOOTPRINT
+            </span>
+
+            <h3>
+              Where Italy becomes detailed.
+            </h3>
+
+            <div id="italy-region-list"></div>
+
+          </article>
+
+
+          <article class="italy-card">
+
+            <span class="micro">
+              CITY GRAVITY
+            </span>
+
+            <h3>
+              The places with the strongest pull.
+            </h3>
+
+            <div id="italy-city-list"></div>
+
+          </article>
+
+
+          <article
+            class="italy-card italy-card--wide"
+          >
+
+            <span class="micro">
+              ITALIAN RHYTHM
+            </span>
+
+            <h3>
+              From origin to return.
+            </h3>
+
+            <div
+              id="italy-timeline"
+              class="italy-timeline"
+            ></div>
+
+          </article>
+
+        </div>
+
+      </section>
+      `
+    );
+
+
+    // ----------------------------------------------------------
+    // Add Italy to desktop navigation
+    // ----------------------------------------------------------
+
+    const desktopNav = $(".nav");
+
+    if (
+      desktopNav &&
+      !desktopNav.querySelector(
+        'a[href="#italy-focus"]'
+      )
+    ) {
+
+      desktopNav
+        .querySelector('a[href="#data"]')
+        ?.insertAdjacentHTML(
+          "beforebegin",
+          '<a href="#italy-focus">Italy</a>'
+        );
+    }
+
+
+    // ----------------------------------------------------------
+    // Add Italy to mobile navigation
+    // ----------------------------------------------------------
+
+    const mobileNav =
+      $("#mobile-nav");
+
+    if (
+      mobileNav &&
+      !mobileNav.querySelector(
+        'a[href="#italy-focus"]'
+      )
+    ) {
+
+      mobileNav
+        .querySelector('a[href="#data"]')
+        ?.insertAdjacentHTML(
+          "beforebegin",
+          '<a href="#italy-focus">Italy</a>'
+        );
+    }
+
+
+    // ----------------------------------------------------------
+    // Renumber following sections
+    // ----------------------------------------------------------
+
+    const dataIndex =
+      $("#data .section-index");
+
+    const journeyIndex =
+      $("#journeys .section-index");
+
+    const placesIndex =
+      $("#places .section-index");
+
+
+    if (dataIndex)
+      dataIndex.textContent = "03";
+
+    if (journeyIndex)
+      journeyIndex.textContent = "04";
+
+    if (placesIndex)
+      placesIndex.textContent = "05";
+
+
+    // ----------------------------------------------------------
+    // Map level buttons
+    // ----------------------------------------------------------
+
+    $$("[data-italy-level]")
+      .forEach(button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            italyLevel =
+              button.dataset.italyLevel;
+
+            $$("[data-italy-level]")
+              .forEach(x =>
+                x.classList.toggle(
+                  "is-active",
+                  x === button
+                )
+              );
+
+            italySelected = null;
+
+            renderItalyMap();
+            renderItalyDetail();
+          }
+        );
+      });
+  }
+
+
+  // ============================================================
+  // FIND ITALY IN WORLD GEOJSON
+  // ============================================================
+
+  function findItalyFeature() {
+
+    return world?.features?.find(
+      f =>
+        f?.properties?.iso3 === italy.iso3 ||
+        f?.properties?.ISO_A3 === italy.iso3 ||
+        f?.properties?.adm0_a3 === italy.iso3
+    );
+  }
+
+
+  // ============================================================
+  // ITALY MAP
+  // ============================================================
+
+  function renderItalyMap() {
+
+    const host =
+      $("#italy-map");
+
+    if (
+      !host ||
+      !window.d3 ||
+      !world
+    ) return;
+
+
+    host.innerHTML = "";
+
+
+    const d3 =
+      window.d3;
+
+
+    const width =
+      Math.max(
+        320,
+        host.clientWidth || 850
+      );
+
+
+    const height =
+      Math.max(
+        520,
+        host.clientHeight || 720
+      );
+
+
+    const feature =
+      findItalyFeature();
+
+
+    if (!feature) return;
+
+
+    const svg =
+      d3
+        .select(host)
+        .append("svg")
+        .attr(
+          "viewBox",
+          `0 0 ${width} ${height}`
+        );
+
+
+    // Dedicated Italian projection
+    const projection =
+      d3.geo
+        .mercator()
+        .center([
+          12.4,
+          42.2
+        ])
+        .scale(
+          Math.min(
+            width,
+            height
+          ) * 3.15
+        )
+        .translate([
+          width / 2,
+          height / 2
+        ]);
+
+
+    const path =
+      d3.geo
+        .path()
+        .projection(
+          projection
+        );
+
+
+    const css =
+      getComputedStyle(
+        document.documentElement
+      );
+
+
+    const bg =
+      css
+        .getPropertyValue("--bg")
+        .trim();
+
+
+    const ink =
+      css
+        .getPropertyValue("--ink")
+        .trim();
+
+
+    // Italy silhouette
+    svg
+      .append("path")
+      .datum(feature)
+      .attr("d", path)
+      .style(
+        "fill",
+        "#4057ff"
+      )
+      .style(
+        "stroke",
+        bg
+      )
+      .style(
+        "stroke-width",
+        1.2
+      );
+
+
+    const points =
+      italyLevel === "city"
+        ? italyCities
+        : italyRegions;
+
+
+    const markerColor =
+      italyLevel === "city"
+        ? "#ff6a3d"
+        : "#d9ff43";
+
+
+    const tooltip =
+      d3
+        .select(host)
+        .append("div")
+        .attr(
+          "class",
+          "italy-map-tooltip"
+        );
+
+
+    const maxVisits =
+      Math.max(
+        1,
+        ...points.map(
+          p => p.visits || 1
+        )
+      );
+
+
+    const markers =
+      svg.append("g");
+
+
+    points
+      .filter(
+        p => p.coordinates
+      )
+      .forEach(p => {
+
+        const xy =
+          projection([
+            p.coordinates.lon,
+            p.coordinates.lat
+          ]);
+
+
+        if (!xy) return;
+
+
+        // Torino becomes visually more important
+        // when using the Cities layer.
+        const radius =
+          italyLevel === "city"
+
+            ? 5 +
+              Math.min(
+                16,
+                Math.sqrt(
+                  (p.visits || 1) /
+                  maxVisits
+                ) * 15
+              )
+
+            : 7;
+
+
+        markers
+          .append("circle")
+          .datum(p)
+          .attr(
+            "cx",
+            xy[0]
+          )
+          .attr(
+            "cy",
+            xy[1]
+          )
+          .attr(
+            "r",
+            radius
+          )
+          .style(
+            "fill",
+            markerColor
+          )
+          .style(
+            "stroke",
+            ink
+          )
+          .style(
+            "stroke-width",
+            1.2
+          )
+          .style(
+            "cursor",
+            "pointer"
+          )
+
+
+          .on(
+            "mouseenter",
+            function(d) {
+
+              const meta =
+                italyLevel === "city"
+
+                  ? `${d.regionName} · ${visitLabel(d)} visits`
+
+                  : `${(d.cities || []).length} cities`;
+
+
+              tooltip
+                .html(
+                  `
+                  <strong>
+                    ${esc(d.name)}
+                  </strong>
+
+                  <br>
+
+                  ${esc(meta)}
+                  `
+                )
+                .classed(
+                  "is-visible",
+                  true
+                );
+            }
+          )
+
+
+          .on(
+            "mousemove",
+            function() {
+
+              const m =
+                d3.mouse(host);
+
+
+              tooltip.style(
+                "transform",
+
+                `translate(
+                  ${Math.min(
+                    width - 190,
+                    m[0] + 14
+                  )}px,
+
+                  ${Math.min(
+                    height - 80,
+                    m[1] + 14
+                  )}px
+                )`
+              );
+            }
+          )
+
+
+          .on(
+            "mouseleave",
+            () =>
+              tooltip.classed(
+                "is-visible",
+                false
+              )
+          )
+
+
+          .on(
+            "click",
+            function(d) {
+
+              italySelected = d;
+
+              renderItalyDetail();
+            }
+          );
+      });
+
+
+    const caption =
+      $("#italy-map-caption");
+
+
+    if (caption) {
+
+      caption.textContent =
+        `${italyLevel.toUpperCase()} LAYER · ` +
+        `${points.length} PLACES · ` +
+        `CLICK TO EXPLORE`;
+    }
+  }
+
+
+  // ============================================================
+  // RIGHT DETAIL PANEL
+  // ============================================================
+
+  function renderItalyDetail() {
+
+    const host =
+      $("#italy-detail");
+
+
+    if (!host) return;
+
+
+    // Default state
+    if (!italySelected) {
+
+      const torino =
+        italyCities.find(
+          c => c.originCity
+        ) ||
+        italyCities[0];
+
+
+      host.innerHTML = `
+
+        <span class="italy-panel__eyebrow">
+          WHY IT IS DIFFERENT
+        </span>
+
+
+        <div class="italy-detail__title">
+
+          <strong>
+            Home ≠ destination
+          </strong>
+
+          <span>
+            ${italy.originSince || 2007}
+            →
+            2026
+          </span>
+
+        </div>
+
+
+        <p>
+          ${esc(
+            italy.essence || ""
+          )}
+        </p>
+
+
+        ${
+          torino
+
+            ? `
+              <p>
+                <strong>
+                  ${esc(torino.name)}
+                </strong>
+
+                anchors this map with
+
+                ${visitLabel(torino)}
+
+                recorded visits.
+              </p>
+            `
+
+            : ""
+        }
+      `;
+
+      return;
+    }
+
+
+    // ----------------------------------------------------------
+    // Region selected
+    // ----------------------------------------------------------
+
+    if (
+      italyLevel === "region"
+    ) {
+
+      const region =
+        italySelected;
+
+
+      host.innerHTML = `
+
+        <span class="italy-panel__eyebrow">
+          REGION
+        </span>
+
+
+        <div class="italy-detail__title">
+
+          <strong>
+            ${esc(region.name)}
+          </strong>
+
+          <span>
+            ${visitLabel(region)}
+            visits
+          </span>
+
+        </div>
+
+
+        <p>
+          ${
+            (region.cities || [])
+              .map(
+                city =>
+                  esc(city.name)
+              )
+              .join(" · ")
+            ||
+            "Cities to add"
+          }
+        </p>
+      `;
+
+      return;
+    }
+
+
+    // ----------------------------------------------------------
+    // City selected
+    // ----------------------------------------------------------
+
+    const city =
+      italySelected;
+
+
+    const year =
+      city.firstVisitYear ||
+      city.firstRecordedYear ||
+      "—";
+
+
+    host.innerHTML = `
+
+      <span class="italy-panel__eyebrow">
+        CITY /
+        ${esc(
+          city.regionName ||
+          "ITALIA"
+        )}
+      </span>
+
+
+      <div class="italy-detail__title">
+
+        <strong>
+          ${esc(city.name)}
+        </strong>
+
+        <span>
+          ${visitLabel(city)}
+          visits
+        </span>
+
+      </div>
+
+
+      <p>
+
+        ${
+          city.originCity
+
+            ? `
+              Origin city ·
+              recorded continuously
+              ${esc(city.firstRecordedYear)}
+              –
+              ${esc(city.lastRecordedYear)}.
+            `
+
+            : `
+              First recorded year:
+              ${esc(year)}.
+            `
+        }
+
+        ${
+          city.inferredCapital
+
+            ? `
+              · Regional capital used
+              as geographic proxy.
+            `
+
+            : ""
+        }
+
+      </p>
+    `;
+  }
+
+
+  // ============================================================
+  // REGIONS + CITIES
+  // ============================================================
+
+  function renderItalyLists() {
+
+    const regionHost =
+      $("#italy-region-list");
+
+
+    const cityHost =
+      $("#italy-city-list");
+
+
+    if (
+      !regionHost ||
+      !cityHost
+    ) return;
+
+
+    // ----------------------------------------------------------
+    // REGIONAL FOOTPRINT
+    // ----------------------------------------------------------
+
+    const maxRegionCities =
+      Math.max(
+        1,
+        ...italyRegions.map(
+          r =>
+            (r.cities || [])
+              .length
+        )
+      );
+
+
+    regionHost.innerHTML =
+      [...italyRegions]
+
+        .sort(
+          (a, b) =>
+
+            (b.cities || []).length -
+            (a.cities || []).length
+
+            ||
+
+            a.name.localeCompare(
+              b.name
+            )
+        )
+
+        .map(
+          region => `
+
+          <div class="italy-region-row">
+
+            <button
+              data-italy-region="${esc(region.name)}"
+            >
+
+              ${esc(region.name)}
+
+              <small>
+
+                ${
+                  (region.cities || [])
+                    .map(
+                      city =>
+                        esc(city.name)
+                    )
+                    .join(" · ")
+                }
+
+              </small>
+
+            </button>
+
+
+            <span class="italy-bar">
+
+              <i
+                style="
+                  width:
+                  ${
+                    Math.max(
+                      8,
+                      (
+                        (region.cities || []).length /
+                        maxRegionCities
+                      ) * 100
+                    )
+                  }%
+                "
+              ></i>
+
+            </span>
+
+
+            <b>
+              ${(region.cities || []).length}
+            </b>
+
+          </div>
+          `
+        )
+
+        .join("");
+
+
+    // ----------------------------------------------------------
+    // CITY GRAVITY
+    // ----------------------------------------------------------
+
+    const maxCityVisits =
+      Math.max(
+        1,
+        ...italyCities.map(
+          city =>
+            city.visits || 1
+        )
+      );
+
+
+    cityHost.innerHTML =
+      [...italyCities]
+
+        .sort(
+          (a, b) =>
+
+            (b.visits || 0) -
+            (a.visits || 0)
+
+            ||
+
+            a.name.localeCompare(
+              b.name
+            )
+        )
+
+        .map(
+          city => `
+
+          <div class="italy-city-row">
+
+            <button
+              data-italy-city="
+                ${esc(city.regionName)}
+                |
+                ${esc(city.name)}
+              "
+            >
+
+              ${esc(city.name)}
+
+              <small>
+
+                ${esc(city.regionName)}
+
+                ${
+                  city.inferredCapital
+
+                    ? " · capital proxy"
+
+                    : ""
+                }
+
+              </small>
+
+            </button>
+
+
+            <span class="italy-bar">
+
+              <i
+                style="
+                  width:
+                  ${
+                    Math.max(
+                      5,
+                      (
+                        (city.visits || 1) /
+                        maxCityVisits
+                      ) * 100
+                    )
+                  }%
+                "
+              ></i>
+
+            </span>
+
+
+            <b>
+              ${visitLabel(city)}×
+            </b>
+
+          </div>
+          `
+        )
+
+        .join("");
+
+
+    // ----------------------------------------------------------
+    // Region click
+    // ----------------------------------------------------------
+
+    $$(
+      "[data-italy-region]",
+      regionHost
+    )
+      .forEach(
+        button =>
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              italyLevel =
+                "region";
+
+
+              italySelected =
+                italyRegions.find(
+                  region =>
+                    region.name ===
+                    button.dataset.italyRegion
+                )
+                ||
+                null;
+
+
+              $$(
+                "[data-italy-level]"
+              )
+                .forEach(
+                  x =>
+                    x.classList.toggle(
+                      "is-active",
+                      x.dataset.italyLevel ===
+                      "region"
+                    )
+                );
+
+
+              renderItalyMap();
+              renderItalyDetail();
+
+
+              $("#italy-map")
+                ?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center"
+                });
+            }
+          )
+      );
+
+
+    // ----------------------------------------------------------
+    // City click
+    // ----------------------------------------------------------
+
+    $$(
+      "[data-italy-city]",
+      cityHost
+    )
+      .forEach(
+        button =>
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const [
+                region,
+                name
+              ] =
+                button.dataset.italyCity
+                  .trim()
+                  .split("|")
+                  .map(x => x.trim());
+
+
+              italyLevel =
+                "city";
+
+
+              italySelected =
+                italyCities.find(
+                  city =>
+                    city.regionName === region &&
+                    city.name === name
+                )
+                ||
+                null;
+
+
+              $$(
+                "[data-italy-level]"
+              )
+                .forEach(
+                  x =>
+                    x.classList.toggle(
+                      "is-active",
+                      x.dataset.italyLevel ===
+                      "city"
+                    )
+                );
+
+
+              renderItalyMap();
+              renderItalyDetail();
+
+
+              $("#italy-map")
+                ?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center"
+                });
+            }
+          )
+      );
+  }
+
+
+  // ============================================================
+  // ITALIAN TIMELINE
+  // ============================================================
+
+  function renderItalyTimeline() {
+
+    const host =
+      $("#italy-timeline");
+
+
+    if (!host) return;
+
+
+    const years =
+      italyJourneys
+
+        .map(
+          journey =>
+            Number(
+              String(
+                journey.date || ""
+              ).slice(0, 4)
+            )
+        )
+
+        .filter(Boolean);
+
+
+    if (!years.length) {
+
+      host.innerHTML =
+        "<p>No Italian dates yet.</p>";
+
+      return;
+    }
+
+
+    const min =
+      Math.min(...years);
+
+
+    const max =
+      Math.max(...years);
+
+
+    const items = [];
+
+
+    for (
+      let year = min;
+      year <= max;
+      year++
+    ) {
+
+      const entries =
+        italyJourneys.filter(
+          journey =>
+            Number(
+              String(
+                journey.date || ""
+              ).slice(0, 4)
+            )
+            === year
+        );
+
+
+      items.push({
+        year,
+        journeys: entries
+      });
+    }
+
+
+    host.style.gridTemplateColumns =
+      `repeat(
+        ${items.length},
+        minmax(78px, 1fr)
+      )`;
+
+
+    host.innerHTML =
+      items
+
+        .map(item => {
+
+          const origin =
+            item.year ===
+            Number(
+              italy.originSince ||
+              2007
+            );
+
+
+          return `
+
+          <div
+            class="
+              italy-year
+
+              ${
+                item.journeys.length
+                  ? "has-trip"
+                  : ""
+              }
+
+              ${
+                origin
+                  ? "origin"
+                  : ""
+              }
+            "
+          >
+
+            <strong>
+              ${item.year}
+            </strong>
+
+
+            <span>
+
+              ${
+                origin
+
+                  ? "origin"
+
+                  : item.journeys
+                      .map(
+                        journey =>
+                          esc(
+                            journey.city ||
+                            journey.region ||
+                            journey.title
+                          )
+                      )
+                      .join("<br>")
+              }
+
+            </span>
+
+          </div>
+          `;
+        })
+
+        .join("");
+  }
+
+
+  // ============================================================
+  // INITIALIZE
+  // ============================================================
+
+  function initItalyFocus() {
+
+    installSection();
+
+    renderItalyMap();
+
+    renderItalyDetail();
+
+    renderItalyLists();
+
+    renderItalyTimeline();
+
+
+    window.addEventListener(
+      "resize",
+      () => renderItalyMap(),
+      {
+        passive: true
+      }
+    );
+  }
+
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    initItalyFocus
+  );
+
+})();
