@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="it" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Elena's Atlas — a personal travel atlas, interactive map and visual journal." />
+  <meta name="theme-color" content="#f2f0ea" />
+  <title>Elena's Atlas — Personal geography</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./site.webmanifest" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <script src="./assets/d3.v3.min.js" defer></script>
+  <script src="./data/travel-data.js" defer></script>
+  <script src="./data/world-geo.js" defer></script>
+  <script src="./assets/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Vai al contenuto</a>
+
+  <header class="header">
+    <a class="wordmark" href="#top" aria-label="Elena's Atlas, home">
+      <span class="wordmark__mark">EA</span>
+      <span>Elena's Atlas</span>
+    </a>
+    <nav class="nav" aria-label="Navigazione principale">
+      <a href="#atlas">Atlas</a>
+      <a href="#data">Data</a>
+      <a href="#journeys">Journeys</a>
+      <a href="#places">Places</a>
+    </nav>
+    <div class="header__actions">
+      <span class="demo-pill" id="demo-pill" hidden>DEMO DATA</span>
+      <button class="round-button" id="theme-toggle" type="button" aria-label="Cambia tema">◐</button>
+      <button class="menu-button" id="menu-button" type="button" aria-expanded="false" aria-controls="mobile-nav">Menu</button>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav" hidden>
+      <a href="#atlas">Atlas</a><a href="#data">Data</a><a href="#journeys">Journeys</a><a href="#places">Places</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero__topline">
+        <span data-profile="eyebrow">PERSONAL GEOGRAPHY / 2026</span>
+        <span class="hero__coordinate" data-profile="base">Amsterdam, NL</span>
+      </div>
+      <h1 data-profile="headline">Places become part of us.</h1>
+      <div class="hero__bottom">
+        <p data-profile="intro">Una geografia personale fatta di paesi, regioni, città, ritorni e cose che restano.</p>
+        <a class="arrow-link" href="#atlas">Explore the atlas <span>↘</span></a>
+      </div>
+      <div class="hero__ticker" aria-hidden="true">
+        <div class="ticker-track" id="ticker-track">COUNTRIES · REGIONS · CITIES · MEMORIES · COUNTRIES · REGIONS · CITIES · MEMORIES ·</div>
+      </div>
+    </section>
+
+    <section class="metric-strip" aria-label="Statistiche principali">
+      <article><span>Countries</span><strong data-stat="countries">—</strong></article>
+      <article><span>Regions</span><strong data-stat="regions">—</strong></article>
+      <article><span>Cities</span><strong data-stat="cities">—</strong></article>
+      <article><span>Journeys</span><strong data-stat="journeys">—</strong></article>
+      <article><span>World</span><strong data-stat="coverage">—</strong></article>
+    </section>
+
+    <section class="atlas section" id="atlas">
+      <div class="section-head">
+        <div><span class="section-index">01</span><p class="kicker">Interactive atlas</p></div>
+        <h2>From the world<br />down to the street.</h2>
+        <p>Esplora il mondo e cambia scala: paese, regione, città. Seleziona un luogo per vedere viaggi, impressioni e ricordi collegati.</p>
+      </div>
+
+      <div class="atlas-shell">
+        <div class="atlas-toolbar">
+          <div class="view-switch" role="group" aria-label="Livello geografico">
+            <button class="is-active" type="button" data-map-level="country" aria-pressed="true">Countries</button>
+            <button type="button" data-map-level="region" aria-pressed="false">Regions</button>
+            <button type="button" data-map-level="city" aria-pressed="false">Cities</button>
+          </div>
+          <div class="view-switch" role="group" aria-label="Proiezione">
+            <button class="is-active" type="button" data-projection="orthographic" aria-pressed="true">Globe</button>
+            <button type="button" data-projection="equirectangular" aria-pressed="false">Flat</button>
+          </div>
+          <button class="text-button" id="map-reset" type="button">Reset ↻</button>
+        </div>
+        <div class="atlas-grid">
+          <div class="map-stage">
+            <div id="world-map" class="world-map" role="application" aria-label="Mappa interattiva dei viaggi"></div>
+            <div class="map-caption"><span class="pulse"></span><span id="map-status">Drag to explore · scroll to zoom</span></div>
+          </div>
+          <aside class="place-panel" id="place-panel">
+            <div class="place-panel__empty">
+              <span class="micro">CURRENT SELECTION</span>
+              <h3>Choose a place.</h3>
+              <p>La geografia diventa più interessante quando si può entrare dentro.</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="data section" id="data">
+      <div class="section-head section-head--compact">
+        <div><span class="section-index">02</span><p class="kicker">The data behind the memories</p></div>
+        <h2>A life, seen<br />from different angles.</h2>
+      </div>
+
+      <div class="viz-grid">
+        <article class="viz-card viz-card--wide">
+          <div class="viz-head"><div><span class="micro">TRAVEL RHYTHM</span><h3>When did the world expand?</h3></div><div class="viz-key" id="year-range"></div></div>
+          <div class="timeline-chart" id="timeline-chart" aria-label="Viaggi per anno"></div>
+        </article>
+
+        <article class="viz-card">
+          <div class="viz-head"><div><span class="micro">GEOGRAPHIC MIX</span><h3>Where the time went.</h3></div></div>
+          <div class="donut-wrap"><div id="continent-donut" class="donut-chart"></div><div class="donut-center"><strong data-stat="continents">—</strong><span>continents</span></div></div>
+          <div id="continent-legend" class="legend-list"></div>
+        </article>
+
+        <article class="viz-card">
+          <div class="viz-head"><div><span class="micro">TRAVEL FINGERPRINT</span><h3>How you tend to travel.</h3></div></div>
+          <div id="fingerprint-chart" class="fingerprint-chart"></div>
+          <p class="viz-note">Una sintesi relativa dei tuoi pattern: ritorni, varietà di città, ampiezza geografica, memoria e profondità.</p>
+        </article>
+
+        <article class="viz-card viz-card--wide">
+          <div class="viz-head"><div><span class="micro">PLACE CONSTELLATION</span><h3>Every city is a node.</h3></div><div class="viz-key">Hover / click</div></div>
+          <div id="constellation-chart" class="constellation-chart" aria-label="Costellazione interattiva delle città"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="journeys section" id="journeys">
+      <div class="section-head">
+        <div><span class="section-index">03</span><p class="kicker">Travel journal</p></div>
+        <h2>Not where I went.<br />What stayed.</h2>
+        <p>Ogni viaggio può diventare una pagina: fotografie, una frase, una sensazione, una cosa imparata, qualcosa che ancora torna alla mente.</p>
+      </div>
+      <div class="journey-feature" id="journey-feature"></div>
+      <div class="journey-grid" id="journey-grid"></div>
+    </section>
+
+    <section class="places section" id="places">
+      <div class="section-head section-head--compact">
+        <div><span class="section-index">04</span><p class="kicker">Geographic archive</p></div>
+        <h2>Country → region → city.</h2>
+      </div>
+      <div class="places-tools">
+        <label class="search-box"><span>⌕</span><input id="place-search" type="search" placeholder="Search country, region or city" autocomplete="off" /></label>
+        <div class="view-switch" role="group" aria-label="Ordina luoghi">
+          <button class="is-active" type="button" data-place-sort="visits" aria-pressed="true">Most visited</button>
+          <button type="button" data-place-sort="alpha" aria-pressed="false">A–Z</button>
+        </div>
+      </div>
+      <div class="country-accordion" id="country-accordion"></div>
+    </section>
+
+    <section class="closing section">
+      <p class="micro">PERSONAL GEOGRAPHY</p>
+      <h2 data-profile="closing">A map is never only a map.</h2>
+      <p>È anche una maniera di ricordare chi eri quando sei arrivata lì.</p>
+      <a href="#top" class="arrow-link">Back to top <span>↑</span></a>
+    </section>
+  </main>
+
+  <dialog class="journey-dialog" id="journey-dialog">
+    <button class="dialog-close" id="dialog-close" type="button" aria-label="Chiudi">×</button>
+    <div id="dialog-content"></div>
+  </dialog>
+
+  <footer class="footer">
+    <span>ELENA'S ATLAS</span><span data-profile="updated">Updated 2026</span><span>Built as a static GitHub Pages site</span>
+  </footer>
+</body>
+</html>
